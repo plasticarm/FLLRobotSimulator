@@ -1,0 +1,33 @@
+{
+  "collections": [
+    {
+      "name": "missions",
+      "fields": [
+        { "name": "userId", "type": "string" },
+        { "name": "missionName", "type": "string" },
+        { "name": "robotConfig", "type": "map" },
+        { "name": "instructions", "type": "array" },
+        { "name": "map2Opacity", "type": "number" },
+        { "name": "isMissionNamesVisible", "type": "boolean" },
+        { "name": "playbackSpeed", "type": "number" },
+        { "name": "functionNames", "type": "map" }
+      ],
+      "rules": [
+        { "action": "read, write", "condition": "request.auth != null && request.auth.uid == resource.data.userId" },
+        { "action": "create", "condition": "request.auth != null && request.resource.data.userId == request.auth.uid" }
+      ]
+    },
+    {
+      "name": "robotProfiles",
+      "fields": [
+        { "name": "userId", "type": "string" },
+        { "name": "profileName", "type": "string" },
+        { "name": "robotConfig", "type": "map" }
+      ],
+      "rules": [
+        { "action": "read, write", "condition": "request.auth != null && request.auth.uid == resource.data.userId" },
+        { "action": "create", "condition": "request.auth != null && request.resource.data.userId == request.auth.uid" }
+      ]
+    }
+  ]
+}

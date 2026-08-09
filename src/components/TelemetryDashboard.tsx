@@ -72,30 +72,34 @@ export function TelemetryDashboard({ telemetryRef }: TelemetryDashboardProps) {
         <Activity size={16} className="text-blue-500" />
         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Live Telemetry</span>
       </div>
-      <div className="flex-1 flex items-center gap-8 py-2">
+      <div className="flex-1 flex items-center justify-between py-2">
         {cards.map((card, idx) => {
           const Icon = card.icon;
           return (
-            <div
-              key={card.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, idx)}
-              onDrop={(e) => handleDrop(e, idx)}
-              onDragOver={handleDragOver}
-              className="flex flex-col min-w-[120px] cursor-grab active:cursor-grabbing group relative"
-            >
-              <div className="flex items-center gap-1.5 mb-1 text-slate-500">
-                <Icon size={12} className="text-blue-500" />
-                <span className="text-[9px] font-bold uppercase tracking-widest">{card.title}</span>
-                <GripHorizontal size={10} className="text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
-              </div>
-              <div 
-                id={`telemetry-${card.id}`} 
-                className="text-sm font-mono text-white truncate"
+            <React.Fragment key={card.id}>
+              <div
+                draggable
+                onDragStart={(e) => handleDragStart(e, idx)}
+                onDrop={(e) => handleDrop(e, idx)}
+                onDragOver={handleDragOver}
+                className="flex flex-col items-center flex-1 min-w-0 cursor-grab active:cursor-grabbing group relative px-2"
               >
-                --
+                <div className="flex items-center justify-center gap-1.5 mb-1 text-slate-500 w-full relative">
+                  <Icon size={12} className="text-blue-500 shrink-0" />
+                  <span className="text-[9px] font-bold uppercase tracking-widest truncate">{card.title}</span>
+                  <GripHorizontal size={10} className="text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity absolute right-0" />
+                </div>
+                <div 
+                  id={`telemetry-${card.id}`} 
+                  className="text-sm font-mono text-white truncate text-center"
+                >
+                  --
+                </div>
               </div>
-            </div>
+              {idx < cards.length - 1 && (
+                <div className="w-px h-8 bg-slate-800 shrink-0"></div>
+              )}
+            </React.Fragment>
           );
         })}
       </div>

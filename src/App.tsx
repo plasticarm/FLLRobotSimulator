@@ -8,6 +8,9 @@ import { TelemetryDashboard } from './components/TelemetryDashboard';
 import { CodeExport } from './components/CodeExport';
 import { MapToolbar } from './components/MapToolbar';
 import { ActiveTool } from './lib/types';
+import { Auth } from './components/Auth';
+import { ProfileMissionManager } from './components/ProfileMissionManager';
+import { Map as MapIcon, Library } from 'lucide-react';
 
 const defaultMission: MissionConfig = {
   missionName: 'Robot Mission',
@@ -42,6 +45,7 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeTool, setActiveTool] = useState<ActiveTool>('none');
   const [leftTab, setLeftTab] = useState<'mission' | 'robot'>('mission');
+  const [centerTab, setCenterTab] = useState<'map' | 'manager'>('map');
   const [resetViewCounter, setResetViewCounter] = useState(0);
   
   const telemetryRef = useRef<TelemetryData>({
@@ -105,51 +109,76 @@ export default function App() {
       {/* CENTER COLUMN: Canvas & Telemetry */}
       <div className="flex-1 flex flex-col overflow-hidden h-full min-w-0 relative">
         <header className='h-14 bg-[#0a0c12]/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-6 z-20 flex-shrink-0'>
-          <div className='flex items-center space-x-6'>
+          <div className='flex items-center space-x-6 h-full'>
             <div className='flex items-center space-x-2'>
               <div className='w-6 h-6 bg-blue-600 rounded flex items-center justify-center shadow-[0_0_10px_rgba(37,99,235,0.4)]'>
                 <div className='w-3 h-3 border-2 border-white rotate-45'></div>
               </div>
-              <span className='font-bold text-white tracking-tight'>FLL ROBOT SIM</span>
+              <span className='font-bold text-white tracking-tight hidden sm:inline-block'>FLL ROBOT SIM</span>
             </div>
-            <div className='h-4 w-px bg-slate-800'></div>
-            <div className='flex items-center space-x-2'>
-              <span className='text-xs font-mono text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20'>LIVE</span>
-              <span className='text-sm font-medium text-white'>{mission.missionName || "Unnamed Mission"}</span>
+            <div className='h-4 w-px bg-slate-800 hidden sm:block'></div>
+            <div className='flex items-center h-full gap-1'>
+              <button
+                onClick={() => setCenterTab('map')}
+                className={`h-full px-4 text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 border-b-2 ${centerTab === 'map' ? 'text-blue-400 border-blue-500 bg-slate-900/30' : 'text-slate-500 border-transparent hover:text-slate-300'}`}
+              >
+                <MapIcon size={14} /> Map
+              </button>
+              <button
+                onClick={() => setCenterTab('manager')}
+                className={`h-full px-4 text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 border-b-2 ${centerTab === 'manager' ? 'text-blue-400 border-blue-500 bg-slate-900/30' : 'text-slate-500 border-transparent hover:text-slate-300'}`}
+              >
+                <Library size={14} /> Profiles & Missions
+              </button>
             </div>
+          </div>
+          <div className='flex items-center space-x-4'>
+            <Auth />
           </div>
         </header>
 
-        <div className="flex-1 min-h-0 relative bg-[radial-gradient(circle_at_center,_#111827_0%,_#050608_100%)] flex items-center justify-center p-8">
+        <div className="flex-1 min-h-0 relative bg-[radial-gradient(circle_at_center,_#111827_0%,_#050608_100%)] flex flex-col">
            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
-           <div className="w-full h-full relative overflow-hidden flex items-center justify-center border border-slate-800/50 rounded-lg">
-              <CanvasMap 
-                mission={mission} 
-                setMission={setMission}
-                telemetryRef={telemetryRef} 
-                onRobotMove={handleRobotMove} 
-                activeTool={activeTool}
-                setActiveTool={setActiveTool}
-                addInstruction={(inst) => setMission(m => ({ ...m, instructions: [...m.instructions, inst] }))}
-                resetViewCounter={resetViewCounter}
-                leftTab={leftTab}
-              />
-           </div>
+           {centerTab === 'map' ? (
+             <div className="w-full h-full relative overflow-hidden flex flex-col items-center justify-center p-8">
+               <div className="w-full h-full relative overflow-hidden flex items-center justify-center border border-slate-800/50 rounded-lg shadow-xl">
+                  <CanvasMap 
+                    mission={mission} 
+                    setMission={setMission}
+                    telemetryRef={telemetryRef} 
+                    onRobotMove={handleRobotMove} 
+                    activeTool={activeTool}
+                    setActiveTool={setActiveTool}
+                    addInstruction={(inst) => setMission(m => ({ ...m, instructions: [...m.instructions, inst] }))}
+                    resetViewCounter={resetViewCounter}
+                    leftTab={leftTab}
+                  />
+               </div>
+             </div>
+           ) : (
+             <div className="absolute inset-0 flex flex-col z-10 bg-[#0a0c12]/95 backdrop-blur-sm">
+               <ProfileMissionManager currentMission={mission} setMission={setMission} />
+             </div>
+           )}
         </div>
-        <MapToolbar 
-          mission={mission} 
-          setMission={setMission} 
-          isPlaying={isPlaying} 
-          setIsPlaying={setIsPlaying}
-          resetSimulation={resetSimulation}
-          activeTool={activeTool}
-          setActiveTool={setActiveTool}
-          telemetryRef={telemetryRef}
-          onResetView={() => setResetViewCounter(c => c + 1)}
-        />
-        <div className="flex-shrink-0 bg-[#0a0c12] border-t border-slate-800 z-10 shadow-[0_-4px_24px_rgba(0,0,0,0.5)]">
-          <TelemetryDashboard telemetryRef={telemetryRef} />
-        </div>
+        {centerTab === 'map' && (
+          <>
+            <MapToolbar 
+              mission={mission} 
+              setMission={setMission} 
+              isPlaying={isPlaying} 
+              setIsPlaying={setIsPlaying}
+              resetSimulation={resetSimulation}
+              activeTool={activeTool}
+              setActiveTool={setActiveTool}
+              telemetryRef={telemetryRef}
+              onResetView={() => setResetViewCounter(c => c + 1)}
+            />
+            <div className="flex-shrink-0 bg-[#0a0c12] border-t border-slate-800 z-10 shadow-[0_-4px_24px_rgba(0,0,0,0.5)]">
+              <TelemetryDashboard telemetryRef={telemetryRef} />
+            </div>
+          </>
+        )}
       </div>
 
       {/* RIGHT COLUMN: Instructions & Code */}

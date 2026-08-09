@@ -25,6 +25,7 @@ export interface Arm {
 }
 
 export interface RobotConfig {
+  id?: string;
   startX: number;
   startY: number;
   startAngle: number;
@@ -36,6 +37,13 @@ export interface RobotConfig {
   arms: Arm[];
 }
 
+export interface RobotProfile {
+  id?: string;
+  userId?: string;
+  profileName: string;
+  robotConfig: RobotConfig;
+}
+
 export interface FunctionNames {
   move: string;
   rotate: string;
@@ -44,6 +52,8 @@ export interface FunctionNames {
 }
 
 export interface MissionConfig {
+  id?: string;
+  userId?: string;
   missionName: string;
   robotConfig: RobotConfig;
   instructions: Instruction[];
