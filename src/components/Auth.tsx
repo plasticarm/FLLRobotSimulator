@@ -15,8 +15,13 @@ export function Auth() {
   const handleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error signing in:', error);
+      if (error.code === 'auth/popup-closed-by-user' || error.message?.includes('closed')) {
+        alert('Login popup was closed. If you are viewing this in the AI Studio preview (an iframe), third-party cookie restrictions may block the login popup from working correctly. Please open the app in a new tab (using the icon in the top right) to log in.');
+      } else {
+        alert(`Login failed: ${error.message || 'Unknown error'}. You may need to open the app in a new tab.`);
+      }
     }
   };
 
