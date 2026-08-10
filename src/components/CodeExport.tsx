@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MissionConfig } from '../lib/types';
-import { generatePythonCode } from '../lib/codegen';
-import { Copy, Download, Code, Settings } from 'lucide-react';
+import { generatePythonCode, parsePythonCode } from '../lib/codegen';
+import { Copy, Download, Code, Settings, ArrowLeftRight } from 'lucide-react';
 
 interface Props {
   mission: MissionConfig;
@@ -12,7 +12,7 @@ export function CodeExport({ mission, setMission }: Props) {
   const [code, setCode] = useState('');
   const [activeTab, setActiveTab] = useState<'code' | 'functions'>('code');
 
-  React.useEffect(() => {
+  useEffect(() => {
     setCode(generatePythonCode(mission));
   }, [mission]);
 
@@ -39,6 +39,11 @@ export function CodeExport({ mission, setMission }: Props) {
     }));
   };
 
+  const reverseTranslate = () => {
+    const newInstructions = parsePythonCode(code, mission.functionNames);
+    setMission(m => ({ ...m, instructions: newInstructions }));
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-900/50 rounded overflow-hidden border border-slate-800">
       <div className="bg-[#0a0c12] flex justify-between items-center border-b border-slate-800">
@@ -57,7 +62,14 @@ export function CodeExport({ mission, setMission }: Props) {
           </button>
         </div>
         {activeTab === 'code' && (
-          <div className="flex gap-2 pr-3">
+          <div className="flex gap-2 pr-3 items-center">
+            <button 
+              onClick={reverseTranslate} 
+              className="px-2 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-white transition-colors flex items-center gap-1 text-[9px] uppercase font-bold tracking-widest" 
+              title="Reverse Translate to Instructions"
+            >
+              <ArrowLeftRight size={10} /> Reverse Translate
+            </button>
             <button onClick={copyToClipboard} className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-400 transition-colors" title="Copy to clipboard">
               <Copy size={12} />
             </button>
@@ -67,9 +79,15 @@ export function CodeExport({ mission, setMission }: Props) {
           </div>
         )}
       </div>
-      <div className="flex-1 overflow-auto p-4 relative">
+
+      <div className="flex-1 p-4 relative">
         {activeTab === 'code' ? (
-          <pre className="text-xs text-slate-300 font-mono whitespace-pre-wrap">{code}</pre>
+          <textarea 
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            className="w-full h-full bg-transparent text-xs text-slate-300 font-mono resize-none focus:outline-none whitespace-pre-wrap leading-relaxed"
+            spellCheck="false"
+          />
         ) : (
           <div className="flex flex-col gap-3">
             <div>

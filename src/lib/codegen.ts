@@ -1,4 +1,57 @@
-import { MissionConfig } from './types';
+import { MissionConfig, Instruction, FunctionNames } from './types';
+
+export function parsePythonCode(code: string, functionNames: FunctionNames): Instruction[] {
+    const moveFunction = functionNames.move || 'drive';
+    const rotateFunction = functionNames.rotate || 'rotateDegrees';
+    const motor1Function = functionNames.motor1 || 'rotateLeftArm';
+    const motor2Function = functionNames.motor2 || 'rotateRightArm';
+
+    const lines = code.split('\n');
+    const newInstructions: Instruction[] = [];
+    
+    const regex = /await\s+([a-zA-Z0-9_]+)\s*\(\s*(-?\d+\.?\d*)\s*(?:,\s*(-?\d+\.?\d*))?\s*\)/;
+    
+    lines.forEach(line => {
+        const match = line.match(regex);
+        if (match) {
+            const funcName = match[1];
+            const val1 = parseFloat(match[2]);
+            const val2 = match[3] ? parseFloat(match[3]) : undefined;
+            
+            if (funcName === moveFunction) {
+                newInstructions.push({
+                    id: Math.random().toString(36).substring(2, 9),
+                    type: 'move',
+                    distance: val1,
+                    speed: val2 || 1000
+                });
+            } else if (funcName === rotateFunction) {
+                newInstructions.push({
+                    id: Math.random().toString(36).substring(2, 9),
+                    type: 'rotate',
+                    angle: val1,
+                    speed: val2 || 500
+                });
+            } else if (funcName === motor1Function) {
+                newInstructions.push({
+                    id: Math.random().toString(36).substring(2, 9),
+                    type: 'motor1',
+                    angle: val1,
+                    speed: val2 || 500
+                });
+            } else if (funcName === motor2Function) {
+                newInstructions.push({
+                    id: Math.random().toString(36).substring(2, 9),
+                    type: 'motor2',
+                    angle: val1,
+                    speed: val2 || 500
+                });
+            }
+        }
+    });
+
+    return newInstructions;
+}
 
 export function generatePythonCode(mission: MissionConfig) {
     const { missionName, robotConfig, instructions, functionNames } = mission;
