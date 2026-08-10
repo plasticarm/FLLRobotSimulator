@@ -10,7 +10,7 @@ import { MapToolbar } from './components/MapToolbar';
 import { ActiveTool } from './lib/types';
 import { Auth } from './components/Auth';
 import { ProfileMissionManager } from './components/ProfileMissionManager';
-import { Map as MapIcon, Library } from 'lucide-react';
+import { Map as MapIcon, Library, Settings, List } from 'lucide-react';
 
 const defaultMission: MissionConfig = {
   missionName: 'Robot Mission',
@@ -48,6 +48,8 @@ export default function App() {
   const [centerTab, setCenterTab] = useState<'map' | 'manager'>('map');
   const [resetViewCounter, setResetViewCounter] = useState(0);
   
+  const [mobileTab, setMobileTab] = useState<'controls' | 'map' | 'instructions'>('map');
+
   const telemetryRef = useRef<TelemetryData>({
     time: 0,
     totalTime: 0,
@@ -97,7 +99,7 @@ export default function App() {
     <div className="min-h-screen bg-[#050608] text-slate-300 font-sans flex flex-col lg:flex-row h-screen overflow-hidden">
       
       {/* LEFT COLUMN: Controls */}
-      <div className="w-full lg:w-[300px] flex-shrink-0 flex flex-col bg-[#0a0c12] border-r border-slate-800 overflow-hidden h-full z-10 shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
+      <div className={`${mobileTab === 'controls' ? 'flex flex-1' : 'hidden'} lg:flex w-full lg:flex-none lg:w-[300px] flex-shrink-0 flex-col bg-[#0a0c12] border-r border-slate-800 overflow-hidden h-full z-10 shadow-[4px_0_24px_rgba(0,0,0,0.5)]`}>
         <Controls 
           mission={mission} 
           setMission={setMission} 
@@ -107,7 +109,7 @@ export default function App() {
       </div>
 
       {/* CENTER COLUMN: Canvas & Telemetry */}
-      <div className="flex-1 flex flex-col overflow-hidden h-full min-w-0 relative">
+      <div className={`${mobileTab === 'map' ? 'flex' : 'hidden'} lg:flex flex-1 flex-col overflow-hidden h-full min-w-0 relative`}>
         <header className='h-14 bg-[#0a0c12]/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-6 z-20 flex-shrink-0'>
           <div className='flex items-center space-x-6 h-full'>
             <div className='flex items-center space-x-2'>
@@ -182,7 +184,7 @@ export default function App() {
       </div>
 
       {/* RIGHT COLUMN: Instructions & Code */}
-      <div className="w-full lg:w-[320px] xl:w-[380px] flex-shrink-0 flex flex-col bg-[#0a0c12] border-l border-slate-800 overflow-hidden h-full z-10 shadow-[-4px_0_24px_rgba(0,0,0,0.5)]">
+      <div className={`${mobileTab === 'instructions' ? 'flex flex-1' : 'hidden'} lg:flex w-full lg:flex-none lg:w-[320px] xl:w-[380px] flex-shrink-0 flex-col bg-[#0a0c12] border-l border-slate-800 overflow-hidden h-full z-10 shadow-[-4px_0_24px_rgba(0,0,0,0.5)]`}>
         <div className="flex-1 flex flex-col p-6 border-b border-slate-800">
           <h2 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 flex-shrink-0">Instructions</h2>
           <div className="flex-1 min-h-0">
@@ -197,6 +199,21 @@ export default function App() {
         </div>
       </div>
 
+      {/* MOBILE TAB BAR */}
+      <div className="lg:hidden flex-shrink-0 bg-[#0a0c12] border-t border-slate-800 flex items-center justify-around p-2 z-30 shadow-[0_-4px_24px_rgba(0,0,0,0.5)]">
+        <button onClick={() => setMobileTab('controls')} className={`flex flex-col items-center p-2 rounded w-1/3 ${mobileTab === 'controls' ? 'text-blue-400 bg-blue-500/10' : 'text-slate-500'}`}>
+          <Settings size={20} />
+          <span className="text-[10px] font-bold uppercase tracking-wider mt-1">Controls</span>
+        </button>
+        <button onClick={() => setMobileTab('map')} className={`flex flex-col items-center p-2 rounded w-1/3 ${mobileTab === 'map' ? 'text-blue-400 bg-blue-500/10' : 'text-slate-500'}`}>
+          <MapIcon size={20} />
+          <span className="text-[10px] font-bold uppercase tracking-wider mt-1">Map</span>
+        </button>
+        <button onClick={() => setMobileTab('instructions')} className={`flex flex-col items-center p-2 rounded w-1/3 ${mobileTab === 'instructions' ? 'text-blue-400 bg-blue-500/10' : 'text-slate-500'}`}>
+          <List size={20} />
+          <span className="text-[10px] font-bold uppercase tracking-wider mt-1">Actions</span>
+        </button>
+      </div>
     </div>
   );
 }
