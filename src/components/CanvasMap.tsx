@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MissionConfig, TelemetryData, Point, ActiveTool, Instruction } from '../lib/types';
 import { getRobotStateAtTime, calculatePlannedPath, toRadians, calculateTotalTime } from '../lib/simulator';
+import { LiveOffset } from '../lib/useKeyboardControl';
 
 interface CanvasMapProps {
   mission: MissionConfig;
@@ -12,13 +13,15 @@ interface CanvasMapProps {
   addInstruction: (inst: Instruction) => void;
   resetViewCounter: number;
   leftTab: 'mission' | 'robot';
+  isControlEnabled?: boolean;
+  liveOffsetRef?: React.MutableRefObject<LiveOffset | null>;
 }
 
 const TABLE_WIDTH_MM = 2362;
 const TABLE_HEIGHT_MM = 1143;
 const TABLE_ASPECT_RATIO = TABLE_WIDTH_MM / TABLE_HEIGHT_MM;
 
-export function CanvasMap({ mission, setMission, telemetryRef, onRobotMove, activeTool, setActiveTool, addInstruction, resetViewCounter, leftTab }: CanvasMapProps) {
+export function CanvasMap({ mission, setMission, telemetryRef, onRobotMove, activeTool, setActiveTool, addInstruction, resetViewCounter, leftTab, isControlEnabled, liveOffsetRef }: CanvasMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
@@ -263,15 +266,24 @@ export function CanvasMap({ mission, setMission, telemetryRef, onRobotMove, acti
       ctx.stroke();
 
       // Arms
-      mission.robotConfig.arms.forEach(arm => {
+      mission.robotConfig.arms.forEach((arm, idx) => {
         const aW = cmToPixels(arm.width);
         const aH = cmToPixels(arm.height);
         const aX = cmToPixels(arm.xOffset);
         const aY = cmToPixels(arm.yOffset);
         
+        let rot = arm.rotation;
+        if (state.armRotations) {
+          if (arm.id === 'arm1' || idx === 0) {
+            rot = state.armRotations.arm1;
+          } else if (arm.id === 'arm2' || idx === 1) {
+            rot = state.armRotations.arm2;
+          }
+        }
+
         ctx.save();
         ctx.translate(aX, aY);
-        ctx.rotate(toRadians(arm.rotation));
+        ctx.rotate(toRadians(rot));
         ctx.fillStyle = '#ef4444';
         ctx.fillRect(-aW/2, -aH/2, aW, aH);
         ctx.restore();
@@ -289,6 +301,32 @@ export function CanvasMap({ mission, setMission, telemetryRef, onRobotMove, acti
       // We read the current time directly from telemetryRef to support playing
       const t = telemetryRef.current.time;
       const state = getRobotStateAtTime(t, mission.instructions, mission.robotConfig, totalTime);
+
+      // Apply live offset from keyboard driving if active
+      if (isControlEnabled && liveOffsetRef?.current) {
+        const live = liveOffsetRef.current;
+        if (live.type === 'move') {
+          state.x += live.value * Math.sin(state.angle);
+          state.y += live.value * Math.cos(state.angle);
+          state.currentDistance = live.value;
+          state.speed = live.speed;
+          state.pathHistory.push({ x: state.x, y: state.y });
+        } else if (live.type === 'rotate') {
+          state.angle += toRadians(live.value);
+          state.currentAngle = live.value;
+          state.speed = live.speed;
+        } else if (live.type === 'motor1') {
+          if (state.armRotations) {
+            state.armRotations.arm1 += live.value;
+          }
+          state.speed = live.speed;
+        } else if (live.type === 'motor2') {
+          if (state.armRotations) {
+            state.armRotations.arm2 += live.value;
+          }
+          state.speed = live.speed;
+        }
+      }
       
       // Update telemetry ref for other components to read
       telemetryRef.current = state;
@@ -301,38 +339,71 @@ export function CanvasMap({ mission, setMission, telemetryRef, onRobotMove, acti
       // Draw measure tool
       if (activeTool === 'measure') {
         const pts = [...measurePoints];
-        if (pts.length === 1 && mousePos) {
+        if (mousePos) {
           pts.push(mousePos);
         }
-        
+
         if (pts.length > 0) {
           ctx.strokeStyle = '#eab308';
           ctx.lineWidth = 2;
-          ctx.beginPath();
-          const s = toCanvasCoords(pts[0].x, pts[0].y);
-          ctx.moveTo(s.x, s.y);
-          ctx.fillStyle = '#eab308';
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
-          ctx.fill();
 
-          if (pts.length === 2) {
-            const e = toCanvasCoords(pts[1].x, pts[1].y);
-            ctx.beginPath();
-            ctx.moveTo(s.x, s.y);
-            ctx.lineTo(e.x, e.y);
-            ctx.stroke();
+          let totalDist = 0;
+
+          for (let i = 0; i < pts.length; i++) {
+            const p = toCanvasCoords(pts[i].x, pts[i].y);
             
+            ctx.fillStyle = '#eab308';
             ctx.beginPath();
-            ctx.arc(e.x, e.y, 4, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
             ctx.fill();
 
-            const dist = Math.sqrt(Math.pow(pts[1].x - pts[0].x, 2) + Math.pow(pts[1].y - pts[0].y, 2));
+            if (i > 0) {
+              const prev = toCanvasCoords(pts[i - 1].x, pts[i - 1].y);
+              ctx.beginPath();
+              ctx.moveTo(prev.x, prev.y);
+              ctx.lineTo(p.x, p.y);
+              ctx.stroke();
+
+              const dist = Math.sqrt(Math.pow(pts[i].x - pts[i - 1].x, 2) + Math.pow(pts[i].y - pts[i - 1].y, 2));
+              totalDist += dist;
+
+              // Draw distance on the midpoint of the segment
+              const midX = (prev.x + p.x) / 2;
+              const midY = (prev.y + p.y) / 2;
+              ctx.fillStyle = 'rgba(0,0,0,0.8)';
+              ctx.fillRect(midX - 30, midY - 12, 60, 24);
+              ctx.fillStyle = '#eab308';
+              ctx.font = '12px monospace';
+              ctx.textAlign = 'center';
+              ctx.fillText(`${dist.toFixed(1)} cm`, midX, midY + 4);
+              ctx.textAlign = 'left';
+            }
+
+            if (i > 0 && i < pts.length - 1) {
+              // Calculate angle between segments
+              const p0 = pts[i - 1];
+              const p1 = pts[i];
+              const p2 = pts[i + 1];
+              const a = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+              const b = Math.atan2(p0.y - p1.y, p0.x - p1.x);
+              let angle = Math.abs((a - b) * 180 / Math.PI);
+              if (angle > 180) angle = 360 - angle;
+
+              ctx.fillStyle = 'rgba(0,0,0,0.8)';
+              ctx.fillRect(p.x + 10, p.y + 10, 50, 24);
+              ctx.fillStyle = '#ef4444'; // Different color for angle
+              ctx.font = '12px monospace';
+              ctx.fillText(`${angle.toFixed(1)}°`, p.x + 15, p.y + 26);
+            }
+          }
+
+          if (pts.length > 1) {
+            const last = toCanvasCoords(pts[pts.length - 1].x, pts[pts.length - 1].y);
             ctx.fillStyle = 'rgba(0,0,0,0.8)';
-            ctx.fillRect(e.x + 10, e.y - 20, 60, 24);
+            ctx.fillRect(last.x + 10, last.y - 30, 100, 24);
             ctx.fillStyle = '#eab308';
-            ctx.font = '12px monospace';
-            ctx.fillText(`${dist.toFixed(1)} cm`, e.x + 15, e.y - 4);
+            ctx.font = 'bold 12px monospace';
+            ctx.fillText(`Total: ${totalDist.toFixed(1)}cm`, last.x + 15, last.y - 14);
           }
         }
       }
@@ -392,7 +463,7 @@ export function CanvasMap({ mission, setMission, telemetryRef, onRobotMove, acti
       window.removeEventListener('resize', resizeCanvas);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [imagesLoaded, mission, telemetryRef, activeTool, measurePoints, pathPoints, mousePos]);
+  }, [imagesLoaded, mission, telemetryRef, activeTool, measurePoints, pathPoints, mousePos, isControlEnabled, liveOffsetRef]);
 
   // Dragging & Tool logic
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -461,13 +532,17 @@ export function CanvasMap({ mission, setMission, telemetryRef, onRobotMove, acti
         lastMousePosRef.current = { x: e.clientX, y: e.clientY };
       }
     } else if (activeTool === 'measure') {
-      if (measurePoints.length >= 2) {
-        setMeasurePoints([{ x: tableX, y: tableY }]);
+      if (e.button === 2) { // Right click to clear/finish
+        setMeasurePoints([]);
       } else {
         setMeasurePoints(prev => [...prev, { x: tableX, y: tableY }]);
       }
     } else if (activeTool === 'path') {
-      setPathPoints(prev => [...prev, { x: tableX, y: tableY }]);
+      if (e.button === 2) {
+        setPathPoints([]);
+      } else {
+        setPathPoints(prev => [...prev, { x: tableX, y: tableY }]);
+      }
     }
   };
 
@@ -479,6 +554,9 @@ export function CanvasMap({ mission, setMission, telemetryRef, onRobotMove, acti
         points: [...pathPoints]
       });
       setPathPoints([]);
+      setActiveTool('none');
+    } else if (activeTool === 'measure') {
+      setMeasurePoints([]);
       setActiveTool('none');
     }
   };
@@ -571,6 +649,7 @@ export function CanvasMap({ mission, setMission, telemetryRef, onRobotMove, acti
         onMouseUp={handleMouseUp}
         onMouseLeave={() => { handleMouseUp(); setMousePos(null); }}
         onDoubleClick={handleDoubleClick}
+        onContextMenu={(e) => e.preventDefault()}
         className={`${dragTarget !== null ? 'cursor-grabbing' : (activeTool !== 'none' ? 'cursor-crosshair' : 'cursor-grab')} shadow-2xl`}
       />
     </div>

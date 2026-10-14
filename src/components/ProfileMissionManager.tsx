@@ -111,6 +111,7 @@ export function ProfileMissionManager({ currentMission, setMission }: Props) {
         userId: user.uid,
         profileName: newProfileName.trim(),
         robotConfig: currentMission.robotConfig,
+        functionNames: currentMission.functionNames,
       };
       await setDoc(doc(db, 'robotProfiles', profileId), profileData);
       setNewProfileName('');
@@ -133,7 +134,13 @@ export function ProfileMissionManager({ currentMission, setMission }: Props) {
   const loadProfile = (profile: RobotProfile) => {
     setMission(prev => ({
       ...prev,
-      robotConfig: profile.robotConfig
+      robotConfig: {
+        ...profile.robotConfig,
+        startX: prev.robotConfig.startX,
+        startY: prev.robotConfig.startY,
+        startAngle: prev.robotConfig.startAngle,
+      },
+      functionNames: profile.functionNames || prev.functionNames
     }));
   };
 

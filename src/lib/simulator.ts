@@ -51,7 +51,11 @@ export function calculateTotalTime(instructions: Instruction[], robotConfig: Rob
       finalState.y = pathCurrentY;
       finalState.angle = pathCurrentAngleRad;
     } else if (instruction.type === 'motor1' || instruction.type === 'motor2') {
-      totalTime += 1; // 1 second pause
+      const motorSpeed = instruction.speed || 500;
+      const duration = instruction.angle !== undefined && Math.abs(instruction.angle) > 0
+        ? Math.abs(instruction.angle) / (motorSpeed / 10)
+        : 1;
+      totalTime += duration;
     }
   });
   return totalTime;
@@ -66,6 +70,8 @@ export function getRobotStateAtTime(
   let currentX = robotConfig.startX;
   let currentY = robotConfig.startY;
   let currentAngleRad = toRadians(robotConfig.startAngle);
+  let currentArm1 = robotConfig.arms?.find(a => a.id === 'arm1')?.rotation ?? (robotConfig.arms?.[0]?.rotation ?? 0);
+  let currentArm2 = robotConfig.arms?.find(a => a.id === 'arm2')?.rotation ?? (robotConfig.arms?.[1]?.rotation ?? 0);
 
   let elapsedTime = 0;
   const pathHistory = [{ x: currentX, y: currentY }];
@@ -81,6 +87,7 @@ export function getRobotStateAtTime(
     currentAngle: 0,
     instructionIndex: -1,
     speed: 0,
+    armRotations: { arm1: currentArm1, arm2: currentArm2 },
   };
 
   if (time <= 0) return finalState;
@@ -179,16 +186,44 @@ export function getRobotStateAtTime(
       currentX = pathCurrentX;
       currentY = pathCurrentY;
       currentAngleRad = pathCurrentAngleRad;
-    } else if (instruction.type === 'motor1' || instruction.type === 'motor2') {
-      duration = 1;
+    } else if (instruction.type === 'motor1') {
+      const motorSpeed = instruction.speed || 500;
+      const angle = instruction.angle || 0;
+      duration = Math.abs(angle) > 0 ? Math.abs(angle) / (motorSpeed / 10) : 1;
       if (elapsedTime + duration >= time) {
+        const timeInInstruction = time - elapsedTime;
+        const progress = duration > 0 ? Math.min(1, Math.max(0, timeInInstruction / duration)) : 1;
         finalState.x = currentX;
         finalState.y = currentY;
         finalState.angle = currentAngleRad;
         finalState.instructionIndex = i;
-        finalState.speed = instruction.speed || 500;
+        finalState.speed = motorSpeed;
+        finalState.armRotations = {
+          arm1: currentArm1 + angle * progress,
+          arm2: currentArm2,
+        };
         return finalState;
       }
+      currentArm1 += angle;
+    } else if (instruction.type === 'motor2') {
+      const motorSpeed = instruction.speed || 500;
+      const angle = instruction.angle || 0;
+      duration = Math.abs(angle) > 0 ? Math.abs(angle) / (motorSpeed / 10) : 1;
+      if (elapsedTime + duration >= time) {
+        const timeInInstruction = time - elapsedTime;
+        const progress = duration > 0 ? Math.min(1, Math.max(0, timeInInstruction / duration)) : 1;
+        finalState.x = currentX;
+        finalState.y = currentY;
+        finalState.angle = currentAngleRad;
+        finalState.instructionIndex = i;
+        finalState.speed = motorSpeed;
+        finalState.armRotations = {
+          arm1: currentArm1,
+          arm2: currentArm2 + angle * progress,
+        };
+        return finalState;
+      }
+      currentArm2 += angle;
     }
     elapsedTime += duration;
   }
@@ -196,6 +231,7 @@ export function getRobotStateAtTime(
   finalState.x = currentX;
   finalState.y = currentY;
   finalState.angle = currentAngleRad;
+  finalState.armRotations = { arm1: currentArm1, arm2: currentArm2 };
   return finalState;
 }
 

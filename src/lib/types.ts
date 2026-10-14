@@ -42,6 +42,7 @@ export interface RobotProfile {
   userId?: string;
   profileName: string;
   robotConfig: RobotConfig;
+  functionNames?: FunctionNames;
 }
 
 export interface FunctionNames {
@@ -73,4 +74,15 @@ export interface TelemetryData {
   currentAngle: number;
   instructionIndex: number;
   speed: number;
+  armRotations?: { arm1: number; arm2: number };
+}
+
+export interface KeyboardControlState {
+  enabled: boolean;
+  activeKey: string | null;
+  activeType: 'move' | 'rotate' | 'motor1' | 'motor2' | null;
+  direction: number;
+  accumulatedValue: number;
+  speedMultiplier: number;
+  currentSpeed: number;
 }

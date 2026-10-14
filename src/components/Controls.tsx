@@ -1,15 +1,30 @@
 import React from 'react';
-import { MissionConfig } from '../lib/types';
-import { Save, FolderOpen } from 'lucide-react';
+import { MissionConfig, KeyboardControlState } from '../lib/types';
+import { Save, FolderOpen, Gamepad2, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, RotateCcw, RotateCw, Zap } from 'lucide-react';
 
 interface Props {
   mission: MissionConfig;
   setMission: React.Dispatch<React.SetStateAction<MissionConfig>>;
   leftTab: 'mission' | 'robot';
   setLeftTab: (tab: 'mission' | 'robot') => void;
+  isControlEnabled: boolean;
+  setIsControlEnabled: (enabled: boolean) => void;
+  controlState: KeyboardControlState;
+  startAction: (key: string) => void;
+  stopAction: (key: string) => void;
 }
 
-export function Controls({ mission, setMission, leftTab, setLeftTab }: Props) {
+export function Controls({
+  mission,
+  setMission,
+  leftTab,
+  setLeftTab,
+  isControlEnabled,
+  setIsControlEnabled,
+  controlState,
+  startAction,
+  stopAction,
+}: Props) {
   
   const updateRobot = (key: keyof MissionConfig['robotConfig'], val: any) => {
     setMission(m => ({ ...m, robotConfig: { ...m.robotConfig, [key]: val } }));
@@ -61,6 +76,276 @@ export function Controls({ mission, setMission, leftTab, setLeftTab }: Props) {
       <div className="flex flex-col gap-6 overflow-y-auto p-4 flex-1">
         {leftTab === 'mission' ? (
           <>
+            {/* Keyboard Control Mode Toggle Card */}
+            <div className={`p-3.5 rounded-lg border transition-all ${isControlEnabled ? 'bg-slate-900/90 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]' : 'bg-slate-900/30 border-slate-800'}`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Gamepad2 size={16} className={isControlEnabled ? 'text-emerald-400 animate-pulse' : 'text-slate-400'} />
+                  <div>
+                    <span className="text-xs font-bold text-white tracking-wide block">Keyboard Control</span>
+                    <span className="text-[10px] text-slate-400 block">Drive & record instructions</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded tracking-wider ${isControlEnabled ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5' : 'bg-slate-800 text-slate-500'}`}>
+                    {isControlEnabled && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>}
+                    {isControlEnabled ? 'ACTIVE' : 'OFF'}
+                  </span>
+                  
+                  {/* Toggle Switch */}
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={isControlEnabled}
+                    onClick={() => setIsControlEnabled(!isControlEnabled)}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 focus:outline-none ${isControlEnabled ? 'bg-emerald-500' : 'bg-slate-700'}`}
+                  >
+                    <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${isControlEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+              </div>
+
+              {isControlEnabled ? (
+                <div className="mt-3 space-y-3 pt-3 border-t border-slate-800">
+                  {/* Live Status HUD */}
+                  <div className={`p-2.5 rounded border text-xs font-mono transition-colors ${
+                    controlState.activeKey 
+                      ? 'bg-blue-950/40 border-blue-500/50 text-blue-200 shadow-[0_0_12px_rgba(59,130,246,0.2)]'
+                      : 'bg-slate-950/60 border-slate-800 text-slate-400'
+                  }`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-sans font-bold flex items-center gap-1">
+                        <Zap size={10} className={controlState.activeKey ? 'text-amber-400 animate-bounce' : 'text-slate-500'} />
+                        {controlState.activeKey ? 'Recording Action...' : 'Ready for input'}
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        Speed: <span className="text-white font-bold">{controlState.currentSpeed}</span> ({controlState.speedMultiplier}x)
+                      </span>
+                    </div>
+
+                    <div className="font-bold text-sm truncate">
+                      {controlState.activeKey ? (
+                        <>
+                          {controlState.activeType === 'move' && (
+                            <span className="text-blue-400">
+                              {controlState.direction > 0 ? '▲ Moving Forward: ' : '▼ Moving Backward: '}
+                              {controlState.accumulatedValue >= 0 ? '+' : ''}{controlState.accumulatedValue.toFixed(1)} cm
+                            </span>
+                          )}
+                          {controlState.activeType === 'rotate' && (
+                            <span className="text-orange-400">
+                              {controlState.direction > 0 ? '↻ Rotating Right: ' : '↺ Rotating Left: '}
+                              {controlState.accumulatedValue >= 0 ? '+' : ''}{controlState.accumulatedValue.toFixed(1)}°
+                            </span>
+                          )}
+                          {controlState.activeType === 'motor1' && (
+                            <span className="text-purple-400">
+                              {controlState.direction > 0 ? '↻ Left Arm CW: ' : '↺ Left Arm CCW: '}
+                              {controlState.accumulatedValue >= 0 ? '+' : ''}{controlState.accumulatedValue.toFixed(1)}°
+                            </span>
+                          )}
+                          {controlState.activeType === 'motor2' && (
+                            <span className="text-rose-400">
+                              {controlState.direction > 0 ? '↻ Right Arm CW: ' : '↺ Right Arm CCW: '}
+                              {controlState.accumulatedValue >= 0 ? '+' : ''}{controlState.accumulatedValue.toFixed(1)}°
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-slate-500 text-xs font-normal">Press W/A/S/D to drive, U/J/O/L for arms</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Speed Modifiers Indicator */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Speed Modifiers:</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
+                      controlState.speedMultiplier === 2 
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm shadow-amber-500/30' 
+                        : 'bg-slate-800/80 text-slate-500 border-slate-700/50'
+                    }`}>
+                      [Shift] 2x Speed
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
+                      controlState.speedMultiplier === 0.5 
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm shadow-cyan-500/30' 
+                        : 'bg-slate-800/80 text-slate-500 border-slate-700/50'
+                    }`}>
+                      [Ctrl] 0.5x Speed
+                    </span>
+                  </div>
+
+                  {/* Interactive Control Pad (Touch / Mouse / Visual Key feedback) */}
+                  <div className="space-y-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/70">
+                    <div>
+                      <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex justify-between">
+                        <span>Movement (W / A / S / D)</span>
+                        <span className="text-slate-600">Hold key to move</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-1.5">
+                        <button
+                          type="button"
+                          onMouseDown={() => startAction('KeyW')}
+                          onMouseUp={() => stopAction('KeyW')}
+                          onMouseLeave={() => stopAction('KeyW')}
+                          onTouchStart={(e) => { e.preventDefault(); startAction('KeyW'); }}
+                          onTouchEnd={(e) => { e.preventDefault(); stopAction('KeyW'); }}
+                          className={`w-16 h-8 rounded font-mono text-xs font-bold transition-all flex items-center justify-center gap-1 border select-none ${
+                            controlState.activeKey === 'KeyW'
+                              ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-500/40 scale-95'
+                              : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                          }`}
+                        >
+                          <ArrowUp size={12} /> W
+                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onMouseDown={() => startAction('KeyA')}
+                            onMouseUp={() => stopAction('KeyA')}
+                            onMouseLeave={() => stopAction('KeyA')}
+                            onTouchStart={(e) => { e.preventDefault(); startAction('KeyA'); }}
+                            onTouchEnd={(e) => { e.preventDefault(); stopAction('KeyA'); }}
+                            className={`w-16 h-8 rounded font-mono text-xs font-bold transition-all flex items-center justify-center gap-1 border select-none ${
+                              controlState.activeKey === 'KeyA'
+                                ? 'bg-orange-600 text-white border-orange-400 shadow-md shadow-orange-500/40 scale-95'
+                                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                            }`}
+                          >
+                            <ArrowLeft size={12} /> A
+                          </button>
+                          <button
+                            type="button"
+                            onMouseDown={() => startAction('KeyS')}
+                            onMouseUp={() => stopAction('KeyS')}
+                            onMouseLeave={() => stopAction('KeyS')}
+                            onTouchStart={(e) => { e.preventDefault(); startAction('KeyS'); }}
+                            onTouchEnd={(e) => { e.preventDefault(); stopAction('KeyS'); }}
+                            className={`w-16 h-8 rounded font-mono text-xs font-bold transition-all flex items-center justify-center gap-1 border select-none ${
+                              controlState.activeKey === 'KeyS'
+                                ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-500/40 scale-95'
+                                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                            }`}
+                          >
+                            <ArrowDown size={12} /> S
+                          </button>
+                          <button
+                            type="button"
+                            onMouseDown={() => startAction('KeyD')}
+                            onMouseUp={() => stopAction('KeyD')}
+                            onMouseLeave={() => stopAction('KeyD')}
+                            onTouchStart={(e) => { e.preventDefault(); startAction('KeyD'); }}
+                            onTouchEnd={(e) => { e.preventDefault(); stopAction('KeyD'); }}
+                            className={`w-16 h-8 rounded font-mono text-xs font-bold transition-all flex items-center justify-center gap-1 border select-none ${
+                              controlState.activeKey === 'KeyD'
+                                ? 'bg-orange-600 text-white border-orange-400 shadow-md shadow-orange-500/40 scale-95'
+                                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                            }`}
+                          >
+                            D <ArrowRight size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Attachments (J, U, L, O) */}
+                    <div className="pt-2 border-t border-slate-800/60">
+                      <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                        Attachments (Arms)
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="bg-slate-900/60 p-1.5 rounded border border-slate-800 flex flex-col items-center gap-1">
+                          <span className="text-[9px] text-slate-400 font-bold uppercase">Left Arm (Arm 1)</span>
+                          <div className="flex gap-1 w-full">
+                            <button
+                              type="button"
+                              onMouseDown={() => startAction('KeyJ')}
+                              onMouseUp={() => stopAction('KeyJ')}
+                              onMouseLeave={() => stopAction('KeyJ')}
+                              onTouchStart={(e) => { e.preventDefault(); startAction('KeyJ'); }}
+                              onTouchEnd={(e) => { e.preventDefault(); stopAction('KeyJ'); }}
+                              className={`flex-1 py-1 rounded text-[10px] font-mono font-bold flex items-center justify-center gap-1 border select-none ${
+                                controlState.activeKey === 'KeyJ'
+                                  ? 'bg-purple-600 text-white border-purple-400 shadow-sm scale-95'
+                                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                              }`}
+                              title="Rotate Left Attachment CCW"
+                            >
+                              <RotateCcw size={10} /> J (↺)
+                            </button>
+                            <button
+                              type="button"
+                              onMouseDown={() => startAction('KeyU')}
+                              onMouseUp={() => stopAction('KeyU')}
+                              onMouseLeave={() => stopAction('KeyU')}
+                              onTouchStart={(e) => { e.preventDefault(); startAction('KeyU'); }}
+                              onTouchEnd={(e) => { e.preventDefault(); stopAction('KeyU'); }}
+                              className={`flex-1 py-1 rounded text-[10px] font-mono font-bold flex items-center justify-center gap-1 border select-none ${
+                                controlState.activeKey === 'KeyU'
+                                  ? 'bg-purple-600 text-white border-purple-400 shadow-sm scale-95'
+                                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                              }`}
+                              title="Rotate Left Attachment CW"
+                            >
+                              U (↻) <RotateCw size={10} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-900/60 p-1.5 rounded border border-slate-800 flex flex-col items-center gap-1">
+                          <span className="text-[9px] text-slate-400 font-bold uppercase">Right Arm (Arm 2)</span>
+                          <div className="flex gap-1 w-full">
+                            <button
+                              type="button"
+                              onMouseDown={() => startAction('KeyL')}
+                              onMouseUp={() => stopAction('KeyL')}
+                              onMouseLeave={() => stopAction('KeyL')}
+                              onTouchStart={(e) => { e.preventDefault(); startAction('KeyL'); }}
+                              onTouchEnd={(e) => { e.preventDefault(); stopAction('KeyL'); }}
+                              className={`flex-1 py-1 rounded text-[10px] font-mono font-bold flex items-center justify-center gap-1 border select-none ${
+                                controlState.activeKey === 'KeyL'
+                                  ? 'bg-rose-600 text-white border-rose-400 shadow-sm scale-95'
+                                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                              }`}
+                              title="Rotate Right Attachment CCW"
+                            >
+                              <RotateCcw size={10} /> L (↺)
+                            </button>
+                            <button
+                              type="button"
+                              onMouseDown={() => startAction('KeyO')}
+                              onMouseUp={() => stopAction('KeyO')}
+                              onMouseLeave={() => stopAction('KeyO')}
+                              onTouchStart={(e) => { e.preventDefault(); startAction('KeyO'); }}
+                              onTouchEnd={(e) => { e.preventDefault(); stopAction('KeyO'); }}
+                              className={`flex-1 py-1 rounded text-[10px] font-mono font-bold flex items-center justify-center gap-1 border select-none ${
+                                controlState.activeKey === 'KeyO'
+                                  ? 'bg-rose-600 text-white border-rose-400 shadow-sm scale-95'
+                                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                              }`}
+                              title="Rotate Right Attachment CW"
+                            >
+                              O (↻) <RotateCw size={10} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-slate-400 italic leading-tight">
+                    Each movement or rotation is automatically added to the instructions sequence when the key is released.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[10px] text-slate-500 mt-1 leading-normal">
+                  Turn on to drive the robot with W/A/S/D & attachment keys. Completed movements will be recorded as instructions.
+                </p>
+              )}
+            </div>
+
             {/* Mission Config */}
             <div>
               <h2 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">

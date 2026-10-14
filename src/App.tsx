@@ -11,6 +11,7 @@ import { ActiveTool } from './lib/types';
 import { Auth } from './components/Auth';
 import { ProfileMissionManager } from './components/ProfileMissionManager';
 import { Map as MapIcon, Library, Settings, List } from 'lucide-react';
+import { useKeyboardControl } from './lib/useKeyboardControl';
 
 const defaultMission: MissionConfig = {
   missionName: 'Robot Mission',
@@ -47,6 +48,7 @@ export default function App() {
   const [leftTab, setLeftTab] = useState<'mission' | 'robot'>('mission');
   const [centerTab, setCenterTab] = useState<'map' | 'manager'>('map');
   const [resetViewCounter, setResetViewCounter] = useState(0);
+  const [isControlEnabled, setIsControlEnabled] = useState(false);
   
   const [mobileTab, setMobileTab] = useState<'controls' | 'map' | 'instructions'>('map');
 
@@ -56,6 +58,17 @@ export default function App() {
     x: 0, y: 0, angle: 0,
     currentDistance: 0, currentAngle: 0,
     instructionIndex: -1, speed: 0
+  });
+
+  const { controlState, liveOffsetRef, startAction, stopAction } = useKeyboardControl({
+    enabled: isControlEnabled,
+    setEnabled: setIsControlEnabled,
+    mission,
+    setMission,
+    telemetryRef,
+    isPlaying,
+    setIsPlaying,
+    setActiveTool,
   });
 
   const lastTimeRef = useRef<number>(0);
@@ -105,6 +118,11 @@ export default function App() {
           setMission={setMission} 
           leftTab={leftTab}
           setLeftTab={setLeftTab}
+          isControlEnabled={isControlEnabled}
+          setIsControlEnabled={setIsControlEnabled}
+          controlState={controlState}
+          startAction={startAction}
+          stopAction={stopAction}
         />
       </div>
 
@@ -135,6 +153,12 @@ export default function App() {
             </div>
           </div>
           <div className='flex items-center space-x-4'>
+            {isControlEnabled && (
+              <div className="hidden md:flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-mono text-emerald-400">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span>KEYBOARD CONTROL ON</span>
+              </div>
+            )}
             <Auth />
           </div>
         </header>
@@ -143,6 +167,13 @@ export default function App() {
            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
            {centerTab === 'map' ? (
              <div className="w-full h-full relative overflow-hidden flex flex-col items-center justify-center p-8">
+               {isControlEnabled && (
+                 <div className="absolute top-10 left-10 z-20 pointer-events-none flex items-center gap-2 bg-slate-900/90 backdrop-blur border border-emerald-500/40 px-3 py-1.5 rounded-full shadow-lg">
+                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                   <span className="text-[11px] font-mono font-bold text-emerald-400 tracking-wider">KEYBOARD CONTROL</span>
+                   <span className="text-[10px] text-slate-400 font-sans hidden sm:inline">• W/A/S/D drive • J/U/L/O arms • Shift/Ctrl speed</span>
+                 </div>
+               )}
                <div className="w-full h-full relative overflow-hidden flex items-center justify-center border border-slate-800/50 rounded-lg shadow-xl">
                   <CanvasMap 
                     mission={mission} 
@@ -154,6 +185,8 @@ export default function App() {
                     addInstruction={(inst) => setMission(m => ({ ...m, instructions: [...m.instructions, inst] }))}
                     resetViewCounter={resetViewCounter}
                     leftTab={leftTab}
+                    isControlEnabled={isControlEnabled}
+                    liveOffsetRef={liveOffsetRef}
                   />
                </div>
              </div>
