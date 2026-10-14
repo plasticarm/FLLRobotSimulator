@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "description": "",
+  "name": "FLL Robot Simulator & Mission Planner",
+  "description": "Interactive FIRST LEGO League robot simulator with trajectory planning, measurement tools, real-time keyboard control, and Python code export.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

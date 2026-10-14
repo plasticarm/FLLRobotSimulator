@@ -80,16 +80,16 @@ export function CodeExport({ mission, setMission }: Props) {
         )}
       </div>
 
-      <div className="flex-1 p-4 relative">
+      <div className="flex-1 min-h-0 p-3 sm:p-4 relative overflow-hidden">
         {activeTab === 'code' ? (
           <textarea 
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            className="w-full h-full bg-transparent text-xs text-slate-300 font-mono resize-none focus:outline-none whitespace-pre-wrap leading-relaxed"
+            className="w-full h-full bg-transparent text-xs text-slate-300 font-mono resize-none focus:outline-none whitespace-pre-wrap leading-relaxed overflow-y-auto"
             spellCheck="false"
           />
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 h-full overflow-y-auto pr-1">
             <div>
               <label className="text-[10px] text-slate-500 block mb-1 uppercase font-bold tracking-widest">Move Function</label>
               <input type="text" value={mission.functionNames.move} onChange={e => updateFn('move', e.target.value)} className="w-full bg-slate-900/50 border border-slate-800 rounded px-2 py-1 text-sm text-slate-300 font-mono" />

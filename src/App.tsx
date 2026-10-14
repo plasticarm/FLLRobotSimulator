@@ -218,16 +218,34 @@ export default function App() {
 
       {/* RIGHT COLUMN: Instructions & Code */}
       <div className={`${mobileTab === 'instructions' ? 'flex flex-1' : 'hidden'} lg:flex w-full lg:flex-none lg:w-[320px] xl:w-[380px] flex-shrink-0 flex-col bg-[#0a0c12] border-l border-slate-800 overflow-hidden h-full z-10 shadow-[-4px_0_24px_rgba(0,0,0,0.5)]`}>
-        <div className="flex-1 flex flex-col p-6 border-b border-slate-800">
-          <h2 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 flex-shrink-0">Instructions</h2>
-          <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 flex flex-col p-4 sm:p-6 border-b border-slate-800 overflow-hidden">
+          <div className="flex items-center justify-between mb-3 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <h2 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Instructions</h2>
+              {mission.instructions.length > 0 && (
+                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700/50">
+                  {mission.instructions.length}
+                </span>
+              )}
+            </div>
+            {mission.instructions.length > 0 && (
+              <button
+                onClick={() => setMission(m => ({ ...m, instructions: [] }))}
+                className="text-[9px] uppercase tracking-wider font-bold text-slate-500 hover:text-red-400 transition-colors"
+                title="Clear all instructions"
+              >
+                Clear All
+              </button>
+            )}
+          </div>
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             <InstructionList 
               instructions={mission.instructions} 
               onChange={inst => setMission(m => ({ ...m, instructions: inst }))} 
             />
           </div>
         </div>
-        <div className="h-[320px] flex-shrink-0 p-6">
+        <div className="h-[300px] sm:h-[320px] flex-shrink-0 p-4 sm:p-6 overflow-hidden">
           <CodeExport mission={mission} setMission={setMission} />
         </div>
       </div>

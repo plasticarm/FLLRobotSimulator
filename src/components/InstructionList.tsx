@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Instruction } from '../lib/types';
 import { GripVertical, Trash2, Edit2, Check } from 'lucide-react';
 
@@ -11,6 +11,15 @@ export function InstructionList({ instructions, onChange }: Props) {
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editValues, setEditValues] = useState<{distance?: number, angle?: number, speed?: number}>({});
+  const listEndRef = useRef<HTMLDivElement>(null);
+  const prevCountRef = useRef(instructions.length);
+
+  useEffect(() => {
+    if (instructions.length > prevCountRef.current) {
+      listEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    prevCountRef.current = instructions.length;
+  }, [instructions.length]);
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIdx(index);
@@ -53,7 +62,7 @@ export function InstructionList({ instructions, onChange }: Props) {
   };
 
   return (
-    <div className="flex flex-col gap-1 h-full overflow-y-auto pr-2">
+    <div className="flex flex-col gap-1.5 h-full overflow-y-auto pr-2 min-h-0">
       {instructions.map((inst, idx) => {
         const getLabel = () => {
           switch (inst.type) {
@@ -138,6 +147,7 @@ export function InstructionList({ instructions, onChange }: Props) {
           NO INSTRUCTIONS
         </div>
       )}
+      <div ref={listEndRef} />
     </div>
   );
 }
