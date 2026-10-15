@@ -98,8 +98,12 @@ export function ProfileMissionManager({ currentMission, setMission }: Props) {
     }
   };
 
-  const loadMission = (mission: MissionConfig) => {
-    setMission(mission);
+  const loadMission = (m: MissionConfig) => {
+    setMission({
+      ...m,
+      measurements: m.measurements || [],
+      isMeasurementsVisible: m.isMeasurementsVisible !== false,
+    });
   };
 
   const saveCurrentRobotAsProfile = async () => {

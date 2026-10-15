@@ -82,8 +82,8 @@ export function Controls({
                 <div className="flex items-center gap-2">
                   <Gamepad2 size={16} className={isControlEnabled ? 'text-emerald-400 animate-pulse' : 'text-slate-400'} />
                   <div>
-                    <span className="text-xs font-bold text-white tracking-wide block">Keyboard Control</span>
-                    <span className="text-[10px] text-slate-400 block">Drive & record instructions</span>
+                    <span className="text-xs font-bold text-white tracking-wide block">Control Mode</span>
+                    <span className="text-[10px] text-slate-400 block">Keyboard & Xbox Controller</span>
                   </div>
                 </div>
 
@@ -104,6 +104,19 @@ export function Controls({
                     <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${isControlEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
                 </div>
+              </div>
+
+              {/* Gamepad Connection Status Badge */}
+              <div className="mt-1 mb-2 flex items-center justify-between bg-slate-950/60 px-2.5 py-1.5 rounded border border-slate-800/80 text-[10px]">
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${controlState.isGamepadConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`}></span>
+                  <span className={`font-mono font-medium ${controlState.isGamepadConnected ? 'text-emerald-400' : 'text-slate-400'}`}>
+                    {controlState.isGamepadConnected ? 'Xbox Controller Connected' : 'Xbox Controller Ready'}
+                  </span>
+                </div>
+                <span className="text-[9px] text-slate-500">
+                  {controlState.isGamepadConnected ? (controlState.gamepadName ? 'Detected' : 'Active') : 'Plug in & press button'}
+                </span>
               </div>
 
               {isControlEnabled ? (
@@ -153,28 +166,59 @@ export function Controls({
                           )}
                         </>
                       ) : (
-                        <span className="text-slate-500 text-xs font-normal">Press W/A/S/D to drive, U/J/O/L for arms</span>
+                        <span className="text-slate-500 text-xs font-normal">
+                          {controlState.isGamepadConnected 
+                            ? 'L-Stick/W/S to drive, R-Stick/A/D to rotate'
+                            : 'Press W/A/S/D to drive, U/J/O/L for arms'}
+                        </span>
                       )}
                     </div>
                   </div>
 
                   {/* Speed Modifiers Indicator */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Speed Modifiers:</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Speed:</span>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
                       controlState.speedMultiplier === 2 
                         ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm shadow-amber-500/30' 
                         : 'bg-slate-800/80 text-slate-500 border-slate-700/50'
                     }`}>
-                      [Shift] 2x Speed
+                      [Shift] / (A) 2x
                     </span>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
                       controlState.speedMultiplier === 0.5 
                         ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm shadow-cyan-500/30' 
                         : 'bg-slate-800/80 text-slate-500 border-slate-700/50'
                     }`}>
-                      [Ctrl] 0.5x Speed
+                      [Ctrl] / (B) 0.5x
                     </span>
+                  </div>
+
+                  {/* Xbox Controller Reference Card */}
+                  <div className="bg-slate-950/70 p-2.5 rounded-lg border border-slate-800 text-[11px] space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      <span className="flex items-center gap-1.5">
+                        <Gamepad2 size={12} className={controlState.isGamepadConnected ? 'text-emerald-400' : 'text-slate-500'} />
+                        Xbox Controller Controls
+                      </span>
+                      <span className="text-[9px] text-emerald-400 font-mono">
+                        {controlState.isGamepadConnected ? 'CONNECTED' : 'STANDBY'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono">
+                      <div className="bg-slate-900/90 p-1.5 rounded border border-slate-800">
+                        <span className="text-slate-500 block text-[9px] uppercase font-sans font-bold">Drive & Steer</span>
+                        <div className="text-blue-300 mt-0.5">🕹️ L-Stick ↕: Drive</div>
+                        <div className="text-orange-300">🕹️ R-Stick ↔: Rotate</div>
+                      </div>
+
+                      <div className="bg-slate-900/90 p-1.5 rounded border border-slate-800">
+                        <span className="text-slate-500 block text-[9px] uppercase font-sans font-bold">Arm Attachments</span>
+                        <div className="text-purple-300 mt-0.5">LT / LB: Arm 1 (↻ / ↺)</div>
+                        <div className="text-rose-300">RT / RB: Arm 2 (↻ / ↺)</div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Interactive Control Pad (Touch / Mouse / Visual Key feedback) */}

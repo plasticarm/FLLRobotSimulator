@@ -6,6 +6,11 @@ export interface Point {
   y: number;
 }
 
+export interface Measurement {
+  id: string;
+  points: Point[];
+}
+
 export interface Instruction {
   id: string;
   type: InstructionType;
@@ -62,6 +67,8 @@ export interface MissionConfig {
   isMissionNamesVisible: boolean;
   playbackSpeed: number;
   functionNames: FunctionNames;
+  measurements?: Measurement[];
+  isMeasurementsVisible?: boolean;
 }
 
 export interface TelemetryData {
@@ -85,4 +92,6 @@ export interface KeyboardControlState {
   accumulatedValue: number;
   speedMultiplier: number;
   currentSpeed: number;
+  isGamepadConnected?: boolean;
+  gamepadName?: string;
 }
